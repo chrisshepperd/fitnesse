@@ -22,6 +22,7 @@ public class CommandRunner {
   private long startTime;
   private long endTime;
   private String command = "";
+  private boolean started = false;
 
   public CommandRunner() {
   }
@@ -43,6 +44,11 @@ public class CommandRunner {
     new Thread(new OuputReadingRunnable(stderr, errorBuffer), "CommandRunner error").start();
 
     sendInput();
+    started = true;
+  }
+
+  public boolean isStarted() {
+    return started;
   }
 
   public void run() throws Exception {

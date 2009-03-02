@@ -75,7 +75,7 @@ public class TestResponder extends ChunkingResponder implements TestSystemListen
       if (data.getContent().length() == 0)
         addEmptyContentMessage();
       testSystem.runTestsAndGenerateHtml(data);
-      testSystemGroup.bye();
+      testSystemGroup.bye();      
     }
   }
 
@@ -104,6 +104,7 @@ public class TestResponder extends ChunkingResponder implements TestSystemListen
 
   public synchronized void exceptionOccurred(Throwable e) {
     //todo remove sout
+    e.printStackTrace();
     System.err.println("TestResponder.exceptionOcurred:" + e.getMessage());
     try {
       completeResponse();

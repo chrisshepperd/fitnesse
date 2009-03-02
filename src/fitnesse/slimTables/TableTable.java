@@ -3,7 +3,6 @@
 package fitnesse.slimTables;
 
 import fitnesse.responders.run.slimResponder.SlimTestContext;
-import static fitnesse.util.ListUtility.list;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +13,10 @@ public class TableTable extends SlimTable {
 
   public TableTable(Table table, String tableId, SlimTestContext slimTestContext) {
     super(table, tableId, slimTestContext);
+  }
+
+  public TableTable(Table table, String tableId, SlimTestContext slimTestContext, String portType) {
+    super(table, tableId, slimTestContext, portType);
   }
 
   protected String getTableType() {

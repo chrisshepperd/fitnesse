@@ -17,6 +17,10 @@ public class QueryTable extends SlimTable {
     super(table, id, testContext);
   }
 
+  public QueryTable(Table table, String id, SlimTestContext testContext, String portType) {
+    super(table, id, testContext, portType);
+  }
+
   protected String getTableType() {
     return "queryTable";
   }

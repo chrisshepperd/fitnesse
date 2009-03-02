@@ -3,14 +3,12 @@
 package fitnesse.responders.run.slimResponder;
 
 import fitnesse.components.CommandRunner;
+import fitnesse.components.CommandRunnerGroup;
 import fitnesse.responders.run.ExecutionLog;
 import fitnesse.responders.run.TestSummary;
 import fitnesse.responders.run.TestSystem;
 import fitnesse.responders.run.TestSystemListener;
-import fitnesse.slim.SlimClient;
-import fitnesse.slim.SlimServer;
-import fitnesse.slim.SlimService;
-import fitnesse.slim.SlimError;
+import fitnesse.slim.*;
 import fitnesse.testutil.MockCommandRunner;
 import fitnesse.wiki.PageData;
 import fitnesse.wiki.WikiPage;
@@ -24,10 +22,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public abstract class SlimTestSystem extends TestSystem implements SlimTestContext {
-  private CommandRunner slimRunner;
-  private String slimCommand;
-  private SlimClient slimClient;
-  private List<Object> instructions;
+  private CommandRunnerGroup slimRunners = new CommandRunnerGroup();
+  private SlimClientGroup slimClientGroup = new SlimClientGroup();
+  private String defaultCommandLine;
   private boolean started;
   protected TableScanner tableScanner;
   protected PageData testResults;
@@ -37,10 +34,11 @@ public abstract class SlimTestSystem extends TestSystem implements SlimTestConte
   private Map<String, String> symbols = new HashMap<String, String>();
   protected TestSummary testSummary;
   private static AtomicInteger slimSocketOffset = new AtomicInteger(0);
-  private int slimSocket;
   protected final Pattern exceptionMessagePattern = Pattern.compile("message:<<(.*)>>");
   private Map<String, ScenarioTable> scenarios = new HashMap<String, ScenarioTable>();
   private List<SlimTable.Expectation> expectations = new ArrayList<SlimTable.Expectation>();
+  private String classPath;
+  private Descriptor descriptor;
 
   public SlimTestSystem(WikiPage page, TestSystemListener listener) {
     super(page, listener);
@@ -72,10 +70,10 @@ public abstract class SlimTestSystem extends TestSystem implements SlimTestConte
   }
 
   public void kill() throws Exception {
-    if (slimRunner != null)
-      slimRunner.kill();
-    if (slimClient != null)
-      slimClient.close();
+    if (slimRunners != null)
+      slimRunners.kill();
+    if (slimClientGroup != null)
+      slimClientGroup.close();
   }
 
   String getSlimFlags() throws Exception {
@@ -86,18 +84,37 @@ public abstract class SlimTestSystem extends TestSystem implements SlimTestConte
   }
 
   protected ExecutionLog createExecutionLog(String classPath, Descriptor descriptor) throws Exception {
-    String slimFlags = getSlimFlags();
-    slimSocket = getNextSlimSocket();
-    String slimArguments = String.format("%s %d", slimFlags, slimSocket);
-    String slimCommandPrefix = buildCommand(descriptor, classPath);
-    slimCommand = String.format("%s %s", slimCommandPrefix, slimArguments);
+    this.classPath = classPath;
+    this.descriptor = descriptor;
+
+    createRunner(SlimTable.DEFAULT_PORT_TYPE, descriptor, false);
+    defaultCommandLine = slimRunners.getFirstCommandRunner().getCommand();
+    slimRunners.getCommandRunners().clear();
+    slimClientGroup.getSlimClients().clear();
+
+    return new ExecutionLog(page, slimRunners);
+  }
+
+  private void createRunner(String portType, Descriptor descriptor, boolean useAsServer) throws Exception {
+    String slimArguments = getSlimFlags();
+    int slimSocket = getNextSlimSocket();
+    String slimCommand = buildCommand(descriptor, classPath, slimArguments, slimSocket+"");
+    CommandRunner slimRunner;
+
     if (fastTest) {
       slimRunner = new MockCommandRunner();
-      createSlimService(slimArguments);
+      createSlimService(String.format("%s %d", slimArguments, slimSocket));
     } else {
       slimRunner = new CommandRunner(slimCommand, "");
     }
-    return new ExecutionLog(page, slimRunner);
+
+    slimRunners.addCommandRunner(portType, slimRunner);
+    slimClientGroup.addSlimClient(portType, new SlimClient("localhost", slimSocket, useAsServer));
+  }
+
+  private boolean useFitNesseAsServer(String portType, PageData pageData) throws Exception {
+    String useAsServer = pageData.getVariable(String.format("%s_%s", portType.toUpperCase(), "USE_AS_SERVER"));
+    return useAsServer != null && Boolean.valueOf(useAsServer);
   }
 
   public int getNextSlimSocket() {
@@ -112,8 +129,7 @@ public abstract class SlimTestSystem extends TestSystem implements SlimTestConte
   }
 
   public void start() throws Exception {
-    slimRunner.asynchronousStart();
-    slimClient = new SlimClient("localhost", slimSocket);
+    slimRunners.asynchronousStart();
     try {
       waitForConnection();
       started = true;
@@ -122,14 +138,14 @@ public abstract class SlimTestSystem extends TestSystem implements SlimTestConte
     }
   }
 
-  public String getCommandLine() {
-    return slimCommand;
+  public String getDefaultCommandLine() {
+    return defaultCommandLine;
   }
 
   public void bye() throws Exception {
-    slimClient.sendBye();
+    slimClientGroup.sendBye();
     if (!fastTest)
-      slimRunner.join();
+      slimRunners.kill();
   }
 
   //For testing only.  Makes responder faster.
@@ -154,7 +170,7 @@ public abstract class SlimTestSystem extends TestSystem implements SlimTestConte
 
   private boolean isConnected() throws Exception {
     try {
-      slimClient.connect();
+      slimClientGroup.connect();
       return true;
     } catch (Exception e) {
       return false;
@@ -178,45 +194,88 @@ public abstract class SlimTestSystem extends TestSystem implements SlimTestConte
 
   void runTestsOnPage(PageData pageData) throws Exception {
     tableScanner = scanTheTables(pageData);
-    instructions = createInstructions(this);
-    instructionResults = slimClient.invokeAndGetResponse(instructions);
+    Map<String, List<Object>> instructionMap = createInstructions(this);
+    instructionResults = new HashMap<String, Object>();
+    for (String portType : instructionMap.keySet()) {
+      if (!slimClientGroup.hasPortType(portType)) {
+        Descriptor newDescriptor = descriptor.clone();
+        newDescriptor.commandPattern = getCommandPattern(portType, pageData);
+        createRunner(portType, newDescriptor, useFitNesseAsServer(portType, pageData));
+        start();
+      }
+      instructionResults.putAll(slimClientGroup.invokeAndGetResponse(portType, instructionMap.get(portType)));
+    }
+  }
+
+  protected static String getCommandPattern(String portType, PageData pageData) throws Exception {
+    if (!SlimTable.DEFAULT_PORT_TYPE.equals(portType)) {
+      String variable = String.format("%s_%s", portType.toUpperCase(), "COMMAND_PATTERN");
+      String testRunner = pageData.getVariable(variable);
+      if (testRunner != null)
+        return testRunner;
+    }
+    return getCommandPattern(pageData);
   }
 
   protected abstract TableScanner scanTheTables(PageData pageData) throws Exception;
 
-  private List<Object> createInstructions(SlimTestContext slimTestContext) {
-    List<Object> instructions = new ArrayList<Object>();
+  private Map<String, List<Object>> createInstructions(SlimTestContext slimTestContext) {
+    Map<String, List<Object>> instructionMap = new HashMap<String, List<Object>>();
+
     for (Table table : tableScanner) {
       String tableId = "" + testTables.size();
       SlimTable slimTable = makeSlimTable(table, tableId, slimTestContext);
       if (slimTable != null) {
-        slimTable.appendInstructions(instructions);
+        if (!instructionMap.containsKey(slimTable.getPortType()))
+          instructionMap.put(slimTable.getPortType(), new ArrayList<Object>());
+
+        slimTable.appendInstructions(instructionMap.get(slimTable.getPortType()));
         testTables.add(slimTable);
       }
     }
-    return instructions;
+
+    return instructionMap;
   }
 
   private SlimTable makeSlimTable(Table table, String tableId, SlimTestContext slimTestContext) {
     String tableType = table.getCellContents(0, 0);
     if (beginsWith(tableType, "dt:") || beginsWith(tableType, "decision:"))
       return new DecisionTable(table, tableId, slimTestContext);
+    else if (beginsWith(tableType, "dt-") || beginsWith(tableType, "decision-"))
+      return new DecisionTable(table, tableId, slimTestContext, extractPortType(tableType));
+    else if (beginsWith(tableType, "query-"))
+      return new QueryTable(table, tableId, slimTestContext, extractPortType(tableType));
     else if (beginsWith(tableType, "query:"))
       return new QueryTable(table, tableId, slimTestContext);
-    else if (beginsWith(tableType, "table"))
+    else if (beginsWith(tableType, "table-"))
+      return new TableTable(table, tableId, slimTestContext, extractPortType(tableType));
+    else if (beginsWith(tableType, "table:"))
       return new TableTable(table, tableId, slimTestContext);
+    else if (beginsWith(tableType, "script-"))
+      return new ScriptTable(table, tableId, slimTestContext, extractPortType(tableType));
     else if (tableType.equalsIgnoreCase("script"))
       return new ScriptTable(table, tableId, slimTestContext);
+    else if (beginsWith(tableType, "scenario-"))
+      return new ScenarioTable(table, tableId, slimTestContext, extractPortType(tableType));
     else if (tableType.equalsIgnoreCase("scenario"))
       return new ScenarioTable(table, tableId, slimTestContext);
     else if (tableType.equalsIgnoreCase("comment"))
       return null;
+    else if (beginsWith(tableType, "import-"))
+      return new ImportTable(table, tableId, slimTestContext, extractPortType(tableType));
     else if (tableType.equalsIgnoreCase("import"))
       return new ImportTable(table, tableId, slimTestContext);
     else if (doesNotHaveColon(tableType))
       return new DecisionTable(table, tableId, slimTestContext);
     else
       return new SlimErrorTable(table, tableId, slimTestContext);
+  }
+
+  private String extractPortType(String tableType) {
+    if (!doesNotHaveColon(tableType))
+      return tableType.substring(tableType.indexOf("-") + 1, tableType.indexOf(":"));
+    else
+      return tableType.substring(tableType.indexOf("-") + 1);
   }
 
   private boolean doesNotHaveColon(String tableType) {

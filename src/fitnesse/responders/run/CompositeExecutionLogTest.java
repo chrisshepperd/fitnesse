@@ -6,6 +6,7 @@ import fitnesse.testutil.MockCommandRunner;
 import static fitnesse.testutil.RegexTestCase.assertSubString;
 import fitnesse.wiki.InMemoryPage;
 import fitnesse.wiki.WikiPage;
+import fitnesse.components.CommandRunnerGroup;
 import static org.junit.Assert.assertNotNull;
 import org.junit.Before;
 import org.junit.Test;
@@ -27,8 +28,8 @@ public class CompositeExecutionLogTest {
 
   @Test
   public void publish() throws Exception {
-    log.add("testSystem1", new ExecutionLog(testPage, runner));
-    log.add("testSystem2", new ExecutionLog(testPage, runner));
+    log.add("testSystem1", new ExecutionLog(testPage, new CommandRunnerGroup(runner)));
+    log.add("testSystem2", new ExecutionLog(testPage, new CommandRunnerGroup(runner)));
     log.publish();
     WikiPage errorLogPage = root.getChildPage(ErrorLogName);
     assertNotNull(errorLogPage);

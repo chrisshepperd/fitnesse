@@ -14,6 +14,10 @@ public class DecisionTable extends SlimTable {
     super(table, id, context);
   }
 
+  public DecisionTable(Table table, String id, SlimTestContext context, String portType) {
+    super(table, id, context, portType);
+  }
+
   protected String getTableType() {
     return instancePrefix;
   }

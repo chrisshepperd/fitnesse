@@ -16,6 +16,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public abstract class SlimTable {
+  public static final String DEFAULT_PORT_TYPE = "DEFAULT";
   protected Table table;
   private SlimTestContext testContext;
   protected String id;
@@ -26,6 +27,7 @@ public abstract class SlimTable {
   private TestSummary testSummary = new TestSummary();
   private SlimTable parent = null;
   private List<SlimTable> children = new ArrayList<SlimTable>();
+  private String portType = DEFAULT_PORT_TYPE;  
 
   public SlimTable(Table table, String id, SlimTestContext testContext) {
     this.id = id;
@@ -35,10 +37,19 @@ public abstract class SlimTable {
     instructions = new ArrayList<Object>();
   }
 
+  public SlimTable(Table table, String id, SlimTestContext testContext, String portType) {
+    this(table, id, testContext);
+    this.portType = portType;
+  }
+
   public SlimTable getParent() {
     return parent;
   }
 
+  public boolean isTableTypeGlobal() {
+    return false;
+  }
+  
   public void addChildTable(SlimTable table, int row) throws Exception {
     table.id = id + "." + children.size();
     table.tableName = table.tableName + "." + children.size();
@@ -703,4 +714,12 @@ public abstract class SlimTable {
       return null;
     }
   }
+
+  public String getPortType() {
+    return portType;
+  }
+
+  public List<Object> getInstructions() {
+    return this.instructions;
+  }  
 }

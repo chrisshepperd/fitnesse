@@ -15,12 +15,12 @@ import java.util.Map;
 
 public class SlimServiceTest {
   private List<Object> statements;
-  private SlimClient slimClient = new SlimClient("localhost", 8099);
+  private SlimClient slimClient = new SlimClient("localhost", 8099, false);
 
   @Before
   public void setUp() throws Exception {
     createSlimService();
-    slimClient = new SlimClient("localhost", 8099);
+    slimClient = new SlimClient("localhost", 8099, false);
     statements = new ArrayList<Object>();
     slimClient.connect();
   }

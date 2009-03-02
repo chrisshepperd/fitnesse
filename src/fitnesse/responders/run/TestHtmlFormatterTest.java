@@ -3,6 +3,7 @@
 package fitnesse.responders.run;
 
 import fitnesse.components.CommandRunner;
+import fitnesse.components.CommandRunnerGroup;
 import fitnesse.html.HtmlPage;
 import fitnesse.html.HtmlPageFactory;
 import fitnesse.testutil.RegexTestCase;
@@ -38,7 +39,7 @@ public class TestHtmlFormatterTest extends RegexTestCase {
   }
 
   public void testExecutionStatusHtml() throws Exception {
-    ExecutionLog log = new ExecutionLog(new WikiPageDummy(), new CommandRunner());
+    ExecutionLog log = new ExecutionLog(new WikiPageDummy(), new CommandRunnerGroup(new CommandRunner()));
     String status = formatter.executionStatus(log);
 
     assertSubString("<div id=\"execution-status\">", status);

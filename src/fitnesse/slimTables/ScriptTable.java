@@ -19,6 +19,10 @@ public class ScriptTable extends SlimTable {
     super(table, tableId, context);
   }
 
+  public ScriptTable(Table table, String tableId, SlimTestContext context, String portType) {
+    super(table, tableId, context, portType);
+  }
+
   protected String getTableType() {
     return "scriptTable";
   }
@@ -33,7 +37,7 @@ public class ScriptTable extends SlimTable {
   }
 
   private boolean isScript() {
-    return "script".equalsIgnoreCase(table.getCellContents(0,0));
+    return table.getCellContents(0,0) != null && table.getCellContents(0,0).toLowerCase().startsWith("script");
   }
 
   private void appendInstructionForRow(int row) {

@@ -6,7 +6,7 @@ import fitnesse.wiki.PageData;
 import fitnesse.wiki.WikiPage;
 
 public abstract class TestSystem implements TestSystemListener {
-  public static final String DEFAULT_COMMAND_PATTERN = "java -cp %p %m";
+  public static final String DEFAULT_COMMAND_PATTERN = "java -cp %p %m %a %z";
   protected WikiPage page;
   protected boolean fastTest;
   protected static final String emptyPageContent = "OH NO! This page is empty!";
@@ -25,14 +25,16 @@ public abstract class TestSystem implements TestSystemListener {
 
   protected abstract ExecutionLog createExecutionLog(String classPath, Descriptor descriptor) throws Exception;
 
-  protected String buildCommand(TestSystem.Descriptor descriptor, String classPath) throws Exception {
+  protected String buildCommand(TestSystem.Descriptor descriptor, String classPath, String arguments, String socketPort) throws Exception {
     String commandPattern = descriptor.commandPattern;
     String command = replace(commandPattern, "%p", classPath);
     command = replace(command, "%m", descriptor.testRunner);
+    command = replace(command, "%a", arguments);
+    command = replace(command, "%z", socketPort);
     return command;
   }
 
-  private static String getCommandPattern(PageData pageData) throws Exception {
+  protected static String getCommandPattern(PageData pageData) throws Exception {
     String testRunner = pageData.getVariable("COMMAND_PATTERN");
     if (testRunner == null)
       testRunner = DEFAULT_COMMAND_PATTERN;
@@ -148,6 +150,10 @@ public abstract class TestSystem implements TestSystemListener {
         d.testRunner.equals(testRunner) &&
         d.commandPattern.equals(commandPattern) &&
         d.pathSeparator.equals(pathSeparator);
+    }
+
+    public Descriptor clone() {
+      return new Descriptor(testSystemName, testRunner, commandPattern, pathSeparator);
     }
   }
 }

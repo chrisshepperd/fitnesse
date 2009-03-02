@@ -3,6 +3,7 @@
 package fitnesse.responders.run;
 
 import fitnesse.components.CommandRunner;
+import fitnesse.components.CommandRunnerGroup;
 import fitnesse.html.HtmlTag;
 import fitnesse.html.HtmlUtil;
 import fitnesse.responders.ErrorResponder;
@@ -27,13 +28,13 @@ public class ExecutionLog {
   private WikiPage root;
 
   private WikiPage testPage;
-  private CommandRunner runner;
+  private CommandRunnerGroup runnerGroup;
   private List<String> reasons = new LinkedList<String>();
   private List<Throwable> exceptions = new LinkedList<Throwable>();
 
-  public ExecutionLog(WikiPage testPage, CommandRunner client) throws Exception {
+  public ExecutionLog(WikiPage testPage, CommandRunnerGroup client) throws Exception {
     this.testPage = testPage;
-    runner = client;
+    runnerGroup = client;
 
     crawler = testPage.getPageCrawler();
     crawler.setDeadEndStrategy(new VirtualEnabledPageCrawler());
@@ -62,19 +63,28 @@ public class ExecutionLog {
 
   String buildLogContent() throws Exception {
     StringBuffer buffer = new StringBuffer();
+    for (String portType : runnerGroup.getCommandRunners().keySet()) {
+      CommandRunner runner = runnerGroup.getCommandRunner(portType);
+      addEntry(buffer, portType);
     addLiteralEntry(buffer, "Date", makeDateFormat().format(new Date()));
     addEntry(buffer, "Test Page", "." + PathParser.render(crawler.getFullPath(testPage)));
     addLiteralEntry(buffer, "Command", runner.getCommand());
     addLiteralEntry(buffer, "Exit code", String.valueOf(runner.getExitCode()));
     addLiteralEntry(buffer, "Time elapsed", (double) runner.getExecutionTime() / 1000.0 + " seconds");
     if (runner.wroteToOutputStream())
-      addOutputBlock(buffer);
+        addOutputBlock(runner, buffer);
     if (runner.wroteToErrorStream())
-      addErrorBlock(buffer);
+        addErrorBlock(runner, buffer);
     if (runner.hasExceptions() || exceptions.size() > 0)
-      addExceptionBlock(buffer);
+        addExceptionBlock(runner, buffer);
+      buffer.append("\n");
+    }
     return buffer.toString();
   }
+  private void addEntry(StringBuffer buffer, String key) {
+    buffer.append("|'''").append(key).append(": '''|\n");
+  }
+
 
   private void addLiteralEntry(StringBuffer buffer, String key, String value) {
     addEntry(buffer, key, literalize(value));
@@ -88,19 +98,19 @@ public class ExecutionLog {
     return String.format("!-%s-!", s);
   }
 
-  private void addOutputBlock(StringBuffer buffer) {
+  private void addOutputBlock(CommandRunner runner, StringBuffer buffer) {
     buffer.append("----");
     buffer.append("'''Standard Output:'''").append("\n");
     buffer.append("{{{").append(runner.getOutput()).append("}}}");
   }
 
-  private void addErrorBlock(StringBuffer buffer) {
+  private void addErrorBlock(CommandRunner runner, StringBuffer buffer) {
     buffer.append("----");
     buffer.append("'''Standard Error:'''").append("\n");
     buffer.append("{{{").append(runner.getError()).append("}}}");
   }
 
-  private void addExceptionBlock(StringBuffer buffer) {
+  private void addExceptionBlock(CommandRunner runner, StringBuffer buffer) {
     exceptions.addAll(runner.getExceptions());
     buffer.append("----");
     buffer.append("'''Internal Exception");
@@ -121,7 +131,7 @@ public class ExecutionLog {
   }
 
   boolean hasCapturedOutput() {
-    return runner.wroteToErrorStream() || runner.wroteToOutputStream();
+    return runnerGroup.wroteToErrorStream() || runnerGroup.wroteToOutputStream();
   }
 
   public String executionStatusHtml() throws Exception {
@@ -154,10 +164,6 @@ public class ExecutionLog {
   }
 
   public int getExitCode() {
-    return runner.getExitCode();
-  }
-
-  public CommandRunner getCommandRunner() {
-    return runner;
+    return runnerGroup.getFirstCommandRunner().getExitCode();
   }
 }

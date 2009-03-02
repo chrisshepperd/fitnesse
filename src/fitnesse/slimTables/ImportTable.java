@@ -13,8 +13,16 @@ public class ImportTable extends SlimTable {
     super(table, id, testContext);
   }
 
+  public ImportTable(Table table, String id, SlimTestContext testContext, String portType) {
+    super(table, id, testContext, portType);
+  }
+
   protected String getTableType() {
     return "import";
+  }
+
+  public boolean isTableTypeGlobal() {
+    return true;
   }
 
   public void appendInstructions() {
@@ -30,8 +38,6 @@ public class ImportTable extends SlimTable {
         addInstruction(importInstruction);
       }
     }
-
-
   }
 
   public void evaluateReturnValues(Map<String, Object> returnValues) {

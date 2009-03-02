@@ -4,6 +4,7 @@ package fitnesse.responders.run;
 
 import fitnesse.FitNesseContext;
 import fitnesse.components.CommandRunningFitClient;
+import fitnesse.components.CommandRunnerGroup;
 import fitnesse.wiki.PageData;
 import fitnesse.wiki.WikiPage;
 
@@ -17,9 +18,9 @@ public class FitTestSystem extends TestSystem {
   }
 
   protected ExecutionLog createExecutionLog(String classPath, Descriptor descriptor) throws Exception {
-    String command = buildCommand(descriptor, classPath);
+    String command = buildCommand(descriptor, classPath, "", "");
     client = new CommandRunningFitClient(this, command, context.port, context.socketDealer, fastTest);
-    return new ExecutionLog(page, client.commandRunner);
+    return new ExecutionLog(page, new CommandRunnerGroup(client.commandRunner));
   }
 
 

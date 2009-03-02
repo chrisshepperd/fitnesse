@@ -70,7 +70,7 @@ public abstract class SlimResponder extends WikiPageResponder implements TestSys
   }
 
   public String getCommandLine() {
-    return testSystem.getCommandLine();
+    return testSystem.getDefaultCommandLine();
   }
 }
 

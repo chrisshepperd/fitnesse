@@ -20,8 +20,17 @@ public class ScenarioTable extends SlimTable {
     super(table, tableId, testContext);
   }
 
+  public ScenarioTable(Table table, String tableId, SlimTestContext testContext, String portType) {
+    super(table, tableId, testContext, portType);
+  }
+
   protected String getTableType() {
     return instancePrefix;
+  }
+
+  @Override
+  public boolean isTableTypeGlobal() {
+    return true;
   }
 
   public void appendInstructions() {

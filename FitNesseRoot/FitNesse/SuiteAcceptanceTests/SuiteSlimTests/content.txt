@@ -1,4 +1,7 @@
 !define TEST_SYSTEM {slim}
+!define JAVA_COMMAND_PATTERN {java -cp %p %m %a %z}
+!define JAVA2_COMMAND_PATTERN {java -cp %p %m %a %z}
+!define JAVA_USE_AS_SERVER {false}
 
 !contents -R2 -g -p -f -h
 

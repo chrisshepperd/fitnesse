@@ -6,6 +6,7 @@ import fitnesse.testutil.MockCommandRunner;
 import fitnesse.testutil.RegexTestCase;
 import static fitnesse.testutil.RegexTestCase.*;
 import fitnesse.wiki.*;
+import fitnesse.components.CommandRunnerGroup;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -22,7 +23,7 @@ public class ExecutionLogTest {
     root = InMemoryPage.makeRoot("RooT");
     testPage = root.addChildPage("TestPage");
     runner = new MockCommandRunner("some command", 123);
-    log = new ExecutionLog(testPage, runner);
+    log = new ExecutionLog(testPage, new CommandRunnerGroup(runner));
   }
 
 
@@ -117,7 +118,7 @@ public class ExecutionLogTest {
     public void testExecutionReport_Ok() throws Exception {
     WikiPageDummy wikiPageDummy = new WikiPageDummy("This.Is.Not.A.Real.Location");
     MockCommandRunner mockCommandRunner = new MockCommandRunner();
-    ExecutionLog executionLog = new ExecutionLog(wikiPageDummy, mockCommandRunner);
+    ExecutionLog executionLog = new ExecutionLog(wikiPageDummy, new CommandRunnerGroup(mockCommandRunner));
     ExecutionStatus result;
 
     if (executionLog.exceptionCount() > 0)
@@ -135,7 +136,7 @@ public class ExecutionLogTest {
     WikiPageDummy wikiPageDummy = new WikiPageDummy("This.Is.Not.A.Real.Location");
     MockCommandRunner mockCommandRunner = new MockCommandRunner();
     mockCommandRunner.setOutput("I wrote something here");
-    ExecutionLog executionLog = new ExecutionLog(wikiPageDummy, mockCommandRunner);
+    ExecutionLog executionLog = new ExecutionLog(wikiPageDummy, new CommandRunnerGroup(mockCommandRunner));
     ExecutionStatus result;
 
     if (executionLog.exceptionCount() > 0)
@@ -152,7 +153,7 @@ public class ExecutionLogTest {
     public void testExecutionReport_Error() throws Exception {
     WikiPageDummy wikiPageDummy = new WikiPageDummy("This.Is.Not.A.Real.Location");
     MockCommandRunner mockCommandRunner = new MockCommandRunner();
-    ExecutionLog executionLog = new ExecutionLog(wikiPageDummy, mockCommandRunner);
+    ExecutionLog executionLog = new ExecutionLog(wikiPageDummy, new CommandRunnerGroup(mockCommandRunner));
     executionLog.addException(new RuntimeException("I messed up"));
     ExecutionStatus result;
 

@@ -9,6 +9,7 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.net.Socket;
+import java.net.ServerSocket;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +21,7 @@ public class SlimClient {
   private String slimServerVersion;
   private String hostName;
   private int port;
+  private boolean useAsServer = false;
 
   public void close() throws Exception {
     reader.close();
@@ -27,16 +29,21 @@ public class SlimClient {
     client.close();
   }
 
-  public SlimClient(String hostName, int port) {
+  public SlimClient(String hostName, int port, boolean useAsServer) {
     this.port = port;
     this.hostName = hostName;
+    this.useAsServer = useAsServer;
   }
 
   public void connect() throws Exception {
+    if (useAsServer) {
+      tryConnect();
+    }else {
     for (int tries = 0; tryConnect() == false; tries++) {
       if (tries > 100)
         throw new SlimError("Could not start Slim.");
       Thread.sleep(50);
+    }
     }
     reader = new StreamReader(client.getInputStream());
     writer = new BufferedWriter(new OutputStreamWriter(client.getOutputStream()));
@@ -45,7 +52,12 @@ public class SlimClient {
 
   private boolean tryConnect() {
     try {
-      client = new Socket(hostName, port);
+      if (useAsServer) {
+        System.out.println("Opening socket on port : " + port);
+        ServerSocket serverSocket = new ServerSocket(port);
+        client = serverSocket.accept();
+      } else
+        client = new Socket(hostName, port);
       return true;
     } catch (IOException e) {
       return false;
@@ -57,7 +69,7 @@ public class SlimClient {
   }
 
   public boolean isConnected() {
-    return slimServerVersion.startsWith("Slim -- V");
+    return slimServerVersion != null && slimServerVersion.startsWith("Slim -- V");
   }
 
   public Map<String, Object> invokeAndGetResponse(List<Object> statements) throws Exception {
@@ -88,5 +100,9 @@ public class SlimClient {
       map.put((String) resultList.get(0), resultList.get(1));
     }
     return map;
+  }
+
+  public int getSocketPort() {
+    return this.port;
   }
 }
