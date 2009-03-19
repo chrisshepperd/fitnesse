@@ -32,6 +32,7 @@ public class ListExecutor {
       List<Object> statementList = ListUtility.uncheckedCast(Object.class, statement);
       verboseMessage(statementList + "\n");
       Object retVal = new Statement(statementList).execute(executor);
+      System.out.println("retVal = " + retVal);
       verboseMessage(retVal);
       verboseMessage("------");
       result.add(retVal);

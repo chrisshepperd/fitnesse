@@ -88,7 +88,6 @@ public class StatementExecutor {
     }
   }
 
-
   private Object createInstanceOfConstructor(String className, Object[] args) throws Exception {
     Class<?> k = searchPathsForClass(className);
     Constructor<?> constructor = getConstructor(k.getConstructors(), args);
@@ -209,11 +208,13 @@ public class StatementExecutor {
     Method methods[] = k.getMethods();
 
     for (Method method : methods) {
+      System.out.println("method = " + method);
       boolean hasMatchingName = method.getName().equals(methodName);
       boolean hasMatchingArguments = method.getParameterTypes().length == nArgs;
       if (hasMatchingName && hasMatchingArguments)
         return method;
     }
+    System.out.println("Found no method for : " + methodName + " returning error");
     throw new SlimError(String.format("message:<<NO_METHOD_IN_CLASS %s[%d] %s.>>", methodName, nArgs, k.getName()));
   }
 

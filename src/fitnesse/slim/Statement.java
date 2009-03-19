@@ -31,6 +31,7 @@ public class Statement {
   }
 
   private boolean operationIs(String operation) {
+    System.out.println("getOperation() = " + getOperation());
     return getOperation().equalsIgnoreCase(operation);
   }
 

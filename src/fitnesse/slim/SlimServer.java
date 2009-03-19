@@ -96,6 +96,7 @@ public class SlimServer implements SocketServer {
 
   private void sendResultsToClient(List<Object> results) throws IOException {
     String resultString = ListSerializer.serialize(results);
+    System.out.println("resultString = " + resultString);
     writer.write(String.format("%06d:%s", resultString.length(), resultString));
     writer.flush();
   }

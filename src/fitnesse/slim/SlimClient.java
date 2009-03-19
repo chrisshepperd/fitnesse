@@ -53,7 +53,6 @@ public class SlimClient {
   private boolean tryConnect() {
     try {
       if (useAsServer) {
-        System.out.println("Opening socket on port : " + port);
         ServerSocket serverSocket = new ServerSocket(port);
         client = serverSocket.accept();
       } else

@@ -13,4 +13,5 @@ public class AuthenticatorSetup extends ColumnFixture {
     FitnesseFixtureContext.context.authenticator = new OneUserAuthenticator(username, password);
     return "ok";
   }
+
 }

@@ -98,7 +98,7 @@ public abstract class SlimTestSystem extends TestSystem implements SlimTestConte
   private void createRunner(String portType, Descriptor descriptor, boolean useAsServer) throws Exception {
     String slimArguments = getSlimFlags();
     int slimSocket = getNextSlimSocket();
-    String slimCommand = buildCommand(descriptor, classPath, slimArguments, slimSocket+"");
+    String slimCommand = buildCommand(descriptor, classPath, slimArguments, slimSocket + "");
     CommandRunner slimRunner;
 
     if (fastTest) {
@@ -113,7 +113,14 @@ public abstract class SlimTestSystem extends TestSystem implements SlimTestConte
   }
 
   private boolean useFitNesseAsServer(String portType, PageData pageData) throws Exception {
-    String useAsServer = pageData.getVariable(String.format("%s_%s", portType.toUpperCase(), "USE_AS_SERVER"));
+    String useAsServer = null;
+
+    if (SlimTable.DEFAULT_PORT_TYPE.equals(portType)) {
+      useAsServer = pageData.getVariable(String.format("%s", "USE_AS_SERVER"));
+    } else {
+      useAsServer = pageData.getVariable(String.format("%s_%s", portType.toUpperCase(), "USE_AS_SERVER"));
+    }
+
     return useAsServer != null && Boolean.valueOf(useAsServer);
   }
 
@@ -208,7 +215,7 @@ public abstract class SlimTestSystem extends TestSystem implements SlimTestConte
   }
 
   protected static String getCommandPattern(String portType, PageData pageData) throws Exception {
-    if (!SlimTable.DEFAULT_PORT_TYPE.equals(portType)) {
+    if (!SlimTable.DEFAULT_PORT_TYPE.equals(portType.toUpperCase())) {
       String variable = String.format("%s_%s", portType.toUpperCase(), "COMMAND_PATTERN");
       String testRunner = pageData.getVariable(variable);
       if (testRunner != null)
@@ -273,9 +280,9 @@ public abstract class SlimTestSystem extends TestSystem implements SlimTestConte
 
   private String extractPortType(String tableType) {
     if (!doesNotHaveColon(tableType))
-      return tableType.substring(tableType.indexOf("-") + 1, tableType.indexOf(":"));
+      return tableType.substring(tableType.indexOf("-") + 1, tableType.indexOf(":")).toUpperCase();
     else
-      return tableType.substring(tableType.indexOf("-") + 1);
+      return tableType.substring(tableType.indexOf("-") + 1).toUpperCase();
   }
 
   private boolean doesNotHaveColon(String tableType) {

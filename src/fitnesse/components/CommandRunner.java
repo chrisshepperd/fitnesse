@@ -34,7 +34,7 @@ public class CommandRunner {
 
   public void asynchronousStart() throws Exception {
     Runtime rt = Runtime.getRuntime();
-    startTime = System.currentTimeMillis();
+    startTime = System.currentTimeMillis();    
     process = rt.exec(command);
     stdin = process.getOutputStream();
     stdout = process.getInputStream();
@@ -53,7 +53,7 @@ public class CommandRunner {
 
   public void run() throws Exception {
     asynchronousStart();
-    join();
+    join();    
   }
 
   public void join() throws Exception {
